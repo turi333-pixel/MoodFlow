@@ -1,13 +1,14 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { MoodType, MoodEntry, MoodInsights, ReminderSettings } from './types';
+import { MoodType, MoodEntry, MoodInsights, ReminderSettings, WeeklySummary } from './types';
 import { MOODS, APP_NAME } from './constants';
 import { saveMoodEntry, getMoodHistory, getReminderSettings, saveReminderSettings } from './utils/storage';
 import { triggerHaptic } from './utils/haptics';
-import { getMoodInsights } from './services/geminiService';
+import { getMoodInsights, getWeeklySummary } from './services/geminiService';
 import Calendar from './components/Calendar';
 import MoodCard from './components/MoodCard';
 import ReminderOverlay from './components/ReminderOverlay';
+import WeeklySummaryCard from './components/WeeklySummaryCard';
 
 type Tab = 'checkin' | 'history' | 'insights' | 'settings';
 
@@ -17,7 +18,9 @@ const App: React.FC = () => {
   const [selectedMood, setSelectedMood] = useState<MoodType | null>(null);
   const [note, setNote] = useState('');
   const [insights, setInsights] = useState<MoodInsights | null>(null);
+  const [weeklySummary, setWeeklySummary] = useState<WeeklySummary | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingWeekly, setIsLoadingWeekly] = useState(false);
   const [checkedInToday, setCheckedInToday] = useState(false);
   const [isEditingToday, setIsEditingToday] = useState(false);
   
@@ -61,9 +64,47 @@ const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [reminderSettings, checkedInToday, showReminderTrigger]);
 
+  const generateWeeklyInsights = useCallback(async (currentHistory: MoodEntry[]) => {
+    if (currentHistory.length === 0) return;
+    
+    setIsLoadingWeekly(true);
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    
+    const weeklyEntries = currentHistory.filter(e => new Date(e.date) >= sevenDaysAgo);
+    
+    if (weeklyEntries.length === 0) {
+      setIsLoadingWeekly(false);
+      return;
+    }
+
+    // Calculate most frequent mood
+    const counts: Record<string, number> = {};
+    weeklyEntries.forEach(e => {
+      counts[e.mood] = (counts[e.mood] || 0) + 1;
+    });
+    const topMood = Object.entries(counts).reduce((a, b) => a[1] > b[1] ? a : b)[0] as MoodType;
+
+    try {
+      const aiResponse = await getWeeklySummary(weeklyEntries);
+      setWeeklySummary({
+        overview: aiResponse.overview || "Your week is unfolding nicely.",
+        mostFrequentMood: topMood,
+        moodCount: weeklyEntries.length
+      });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoadingWeekly(false);
+    }
+  }, []);
+
   const handleTabChange = (tab: Tab) => {
     triggerHaptic(10);
     setActiveTab(tab);
+    if (tab === 'history' && !weeklySummary) {
+      generateWeeklyInsights(history);
+    }
   };
 
   const handleMoodSelect = (mood: MoodType) => {
@@ -122,6 +163,7 @@ const App: React.FC = () => {
     setHistory(updatedHistory);
     setCheckedInToday(true);
     setIsEditingToday(false);
+    setWeeklySummary(null); // Force refresh summary
 
     try {
       const moodInsights = await getMoodInsights(selectedMood, note);
@@ -324,6 +366,8 @@ const App: React.FC = () => {
                 <button className="px-6 py-2 text-gray-400 font-black rounded-xl text-xs uppercase tracking-widest hover:text-gray-600 transition-all">List</button>
               </div>
             </div>
+
+            <WeeklySummaryCard summary={weeklySummary} loading={isLoadingWeekly} />
 
             <Calendar history={history} />
 

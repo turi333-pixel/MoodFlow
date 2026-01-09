@@ -29,6 +29,12 @@ export interface MoodInsights {
   tips: Tip[];
 }
 
+export interface WeeklySummary {
+  overview: string;
+  mostFrequentMood: MoodType;
+  moodCount: number;
+}
+
 export interface ReminderSettings {
   enabled: boolean;
   time: string; // HH:mm format

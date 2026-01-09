@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { MoodType, MoodInsights } from "../types";
+import { MoodType, MoodInsights, MoodEntry, WeeklySummary } from "../types";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
@@ -61,5 +61,43 @@ export async function getMoodInsights(mood: MoodType, note: string): Promise<Moo
         { title: "Hydrate", description: "Drink a glass of water. It's a simple act of self-care.", category: "wellness" }
       ]
     };
+  }
+}
+
+export async function getWeeklySummary(entries: MoodEntry[]): Promise<Partial<WeeklySummary>> {
+  if (entries.length === 0) return { overview: "No entries yet to analyze." };
+
+  const moodContext = entries.map(e => `Mood: ${e.mood}, Note: ${e.note || 'N/A'}`).join(' | ');
+  const prompt = `Below are a user's mood entries for the past week:
+  ${moodContext}
+  
+  Provide a brief (2-3 sentences), warm, and encouraging overview of their emotional state this week. 
+  Look for patterns or shifts. Return JSON.`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            overview: {
+              type: Type.STRING,
+              description: "A narrative overview of the week's emotional state",
+            }
+          },
+          required: ["overview"],
+        },
+      },
+    });
+
+    const text = response.text;
+    if (!text) throw new Error("No response from AI");
+    return JSON.parse(text);
+  } catch (error) {
+    console.error("Weekly Summary API Error:", error);
+    return { overview: "You've been documenting your journey, which is a powerful step in itself. Every week is a new opportunity for growth." };
   }
 }
