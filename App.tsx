@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { MoodType, MoodEntry, MoodInsights, ReminderSettings } from './types';
 import { MOODS, APP_NAME } from './constants';
 import { saveMoodEntry, getMoodHistory, getReminderSettings, saveReminderSettings } from './utils/storage';
+import { triggerHaptic } from './utils/haptics';
 import { getMoodInsights } from './services/geminiService';
 import Calendar from './components/Calendar';
 import MoodCard from './components/MoodCard';
@@ -60,7 +61,18 @@ const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [reminderSettings, checkedInToday, showReminderTrigger]);
 
+  const handleTabChange = (tab: Tab) => {
+    triggerHaptic(10);
+    setActiveTab(tab);
+  };
+
+  const handleMoodSelect = (mood: MoodType) => {
+    triggerHaptic(15);
+    setSelectedMood(mood);
+  };
+
   const handleReminderDismiss = () => {
+    triggerHaptic(5);
     setShowReminderTrigger(false);
     const updated = { ...reminderSettings, lastDismissedDate: new Date().toDateString() };
     setReminderSettings(updated);
@@ -68,6 +80,7 @@ const App: React.FC = () => {
   };
 
   const handleReminderSnooze = () => {
+    triggerHaptic(10);
     setShowReminderTrigger(false);
     if (snoozeTimeoutRef.current) window.clearTimeout(snoozeTimeoutRef.current);
     snoozeTimeoutRef.current = window.setTimeout(() => {
@@ -76,11 +89,13 @@ const App: React.FC = () => {
   };
 
   const handleGoToCheckinFromReminder = () => {
+    triggerHaptic(20);
     setShowReminderTrigger(false);
     setActiveTab('checkin');
   };
 
   const handleEditToday = () => {
+    triggerHaptic(15);
     const today = new Date().toDateString();
     const todayEntry = history.find(h => new Date(h.date).toDateString() === today);
     if (todayEntry) {
@@ -93,6 +108,7 @@ const App: React.FC = () => {
   const handleSubmit = async () => {
     if (!selectedMood) return;
 
+    triggerHaptic([20, 50, 20]);
     setIsLoading(true);
     const newEntry: MoodEntry = {
       id: crypto.randomUUID(),
@@ -119,6 +135,7 @@ const App: React.FC = () => {
   };
 
   const handleReset = () => {
+    triggerHaptic(5);
     setSelectedMood(null);
     setNote('');
     setIsEditingToday(false);
@@ -127,11 +144,13 @@ const App: React.FC = () => {
 
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
+    triggerHaptic(20);
     saveReminderSettings(reminderSettings);
     alert('Settings saved!');
   };
 
   const toggleReminder = () => {
+    triggerHaptic(15);
     const updated = { ...reminderSettings, enabled: !reminderSettings.enabled };
     setReminderSettings(updated);
     saveReminderSettings(updated);
@@ -205,13 +224,13 @@ const App: React.FC = () => {
                     <span>Tweak Mood</span>
                   </button>
                   <button 
-                    onClick={() => setActiveTab('history')}
+                    onClick={() => handleTabChange('history')}
                     className="px-8 py-4 bg-white text-gray-600 font-black rounded-2xl shadow-lg border-2 border-gray-50 hover:bg-gray-50 transition-all active:scale-95"
                   >
                     Journey
                   </button>
                   <button 
-                    onClick={() => setActiveTab('insights')}
+                    onClick={() => handleTabChange('insights')}
                     className="px-8 py-4 bg-indigo-600 text-white font-black rounded-2xl shadow-xl hover:bg-indigo-700 transition-all flex items-center space-x-3 active:scale-95"
                   >
                     <i className="fas fa-flask-vial"></i>
@@ -225,7 +244,7 @@ const App: React.FC = () => {
                   {MOODS.map((m) => (
                     <button
                       key={m.type}
-                      onClick={() => setSelectedMood(m.type)}
+                      onClick={() => handleMoodSelect(m.type)}
                       className={`group relative p-8 rounded-[2.5rem] border-4 transition-all flex flex-col items-center justify-center space-y-4 overflow-hidden
                         ${selectedMood === m.type 
                           ? `border-indigo-500 bg-white shadow-2xl scale-[1.05]` 
@@ -395,7 +414,7 @@ const App: React.FC = () => {
                   <p className="text-gray-500 font-medium max-w-xs mx-auto">Sync your current vibe on the check-in screen to generate insights.</p>
                 </div>
                 <button 
-                  onClick={() => setActiveTab('checkin')}
+                  onClick={() => handleTabChange('checkin')}
                   className="px-10 py-4 bg-indigo-600 text-white font-black rounded-2xl hover:bg-indigo-700 transition-all shadow-xl active:scale-95"
                 >
                   Go to Check-in
@@ -487,7 +506,7 @@ const App: React.FC = () => {
       {/* Mobile Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-gray-100 px-8 py-5 flex justify-between items-center z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] md:static md:bg-transparent md:border-none md:shadow-none md:justify-center md:space-x-12 md:pb-12">
         <button 
-          onClick={() => setActiveTab('checkin')}
+          onClick={() => handleTabChange('checkin')}
           className={`flex flex-col items-center space-y-1 group transition-all ${activeTab === 'checkin' ? 'text-indigo-600 scale-110' : 'text-gray-300 hover:text-gray-400'}`}
         >
           <div className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all ${activeTab === 'checkin' ? 'bg-indigo-50 shadow-sm' : 'group-hover:bg-gray-50'}`}>
@@ -497,7 +516,7 @@ const App: React.FC = () => {
         </button>
         
         <button 
-          onClick={() => setActiveTab('history')}
+          onClick={() => handleTabChange('history')}
           className={`flex flex-col items-center space-y-1 group transition-all ${activeTab === 'history' ? 'text-indigo-600 scale-110' : 'text-gray-300 hover:text-gray-400'}`}
         >
           <div className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all ${activeTab === 'history' ? 'bg-indigo-50 shadow-sm' : 'group-hover:bg-gray-50'}`}>
@@ -507,7 +526,7 @@ const App: React.FC = () => {
         </button>
 
         <button 
-          onClick={() => setActiveTab('insights')}
+          onClick={() => handleTabChange('insights')}
           className={`flex flex-col items-center space-y-1 group transition-all ${activeTab === 'insights' ? 'text-indigo-600 scale-110' : 'text-gray-300 hover:text-gray-400'}`}
         >
           <div className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all ${activeTab === 'insights' ? 'bg-indigo-50 shadow-sm' : 'group-hover:bg-gray-50'}`}>
@@ -517,7 +536,7 @@ const App: React.FC = () => {
         </button>
 
         <button 
-          onClick={() => setActiveTab('settings')}
+          onClick={() => handleTabChange('settings')}
           className={`flex flex-col items-center space-y-1 group transition-all ${activeTab === 'settings' ? 'text-indigo-600 scale-110' : 'text-gray-300 hover:text-gray-400'}`}
         >
           <div className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all ${activeTab === 'settings' ? 'bg-indigo-50 shadow-sm' : 'group-hover:bg-gray-50'}`}>

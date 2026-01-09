@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { MoodEntry } from '../types';
 import { MOODS } from '../constants';
+import { triggerHaptic } from '../utils/haptics';
 
 interface CalendarProps {
   history: MoodEntry[];
@@ -17,10 +18,12 @@ const Calendar: React.FC<CalendarProps> = ({ history }) => {
   const year = currentDate.getFullYear();
 
   const prevMonth = () => {
+    triggerHaptic(5);
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
   };
 
   const nextMonth = () => {
+    triggerHaptic(5);
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
   };
 

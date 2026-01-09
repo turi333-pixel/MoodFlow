@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { triggerHaptic } from '../utils/haptics';
 
 interface ReminderOverlayProps {
   message: string;
@@ -23,7 +24,10 @@ const ReminderOverlay: React.FC<ReminderOverlayProps> = ({ message, onDismiss, o
 
         <div className="w-full flex flex-col space-y-3 pt-4">
           <button
-            onClick={onGoToCheckin}
+            onClick={() => {
+              triggerHaptic(20);
+              onGoToCheckin();
+            }}
             className="w-full py-4 bg-indigo-600 text-white font-bold rounded-2xl shadow-lg hover:bg-indigo-700 transition-all active:scale-95"
           >
             Start Check-in
@@ -31,13 +35,19 @@ const ReminderOverlay: React.FC<ReminderOverlayProps> = ({ message, onDismiss, o
           
           <div className="flex space-x-3">
             <button
-              onClick={onSnooze}
+              onClick={() => {
+                triggerHaptic(10);
+                onSnooze();
+              }}
               className="flex-1 py-3 bg-gray-50 text-gray-600 font-bold rounded-xl hover:bg-gray-100 transition-all text-sm"
             >
               Snooze (10m)
             </button>
             <button
-              onClick={onDismiss}
+              onClick={() => {
+                triggerHaptic(5);
+                onDismiss();
+              }}
               className="flex-1 py-3 bg-gray-50 text-gray-400 font-bold rounded-xl hover:bg-gray-100 transition-all text-sm"
             >
               Dismiss
