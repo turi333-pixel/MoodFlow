@@ -163,12 +163,13 @@ const App: React.FC = () => {
     setHistory(updatedHistory);
     setCheckedInToday(true);
     setIsEditingToday(false);
-    setWeeklySummary(null); // Force refresh summary
+    setWeeklySummary(null); // Force refresh summary for history tab
 
     try {
       const moodInsights = await getMoodInsights(selectedMood, note);
       setInsights(moodInsights);
-      setActiveTab('insights');
+      // Removed automatic transition to 'insights' tab to keep user in control.
+      // The user remains on 'checkin' where they will see the "Locked in!" view.
     } catch (error) {
       console.error(error);
     } finally {
