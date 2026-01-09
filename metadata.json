@@ -1,0 +1,7 @@
+{
+  "name": "MoodFlow",
+  "description": "A vibrant, AI-powered mood tracker that helps you visualize your emotional journey and provides personalized mental wellness tips using Gemini.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
